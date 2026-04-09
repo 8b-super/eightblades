@@ -238,7 +238,7 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
   <div class="content">
 
     <!-- Home -->
-    <div class="screen on" id="s-home">
+    <div class="screen" id="s-home">
       <div class="sh">
         <div><div class="sht" id="home-greet" data-i18n="">مرحباً</div><div class="shs" id="home-date"></div></div>
       </div>
@@ -739,12 +739,10 @@ function applyLang() {
   });
 
   // Re-render nav
-  if (el('app') && el('app').style.display !== 'none') {
+  if (ME && el('app') && el('app').style.display !== 'none') {
     buildNav();
-    // Re-render employee role in topbar
     var tbRole = el('tb-role');
-    if (tbRole && ME) tbRole.textContent = RL(ME.role);
-    // Reload current screen
+    if (tbRole) tbRole.textContent = RL(ME.role);
     var activeScreen = document.querySelector('.screen.on');
     if (activeScreen) {
       var sid = activeScreen.id.replace('s-','');
