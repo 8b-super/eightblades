@@ -622,10 +622,23 @@ document.addEventListener('click', function(ev) {
 // ═══════════════════════════════
 // BOOT
 // ═══════════════════════════════
+function applyLogo() {
+  if (!CFG.logo) return;
+  // Loading screen
+  var ldLogo = el('ld') ? el('ld').querySelector('.ld-logo') : null;
+  if (ldLogo) ldLogo.innerHTML = '<img src="' + CFG.logo + '" style="height:40px;border-radius:8px;object-fit:cover">';
+  // Login screen
+  var lgLogo = el('lg-logo');
+  if (lgLogo) lgLogo.innerHTML = '<img src="' + CFG.logo + '" style="height:40px;border-radius:8px;object-fit:cover">';
+  // Topbar
+  var tbLogo = el('tb-logo');
+  if (tbLogo) tbLogo.innerHTML = '<img src="' + CFG.logo + '" style="height:28px;border-radius:6px;object-fit:cover">';
+}
 function boot() {
   el('ld-txt').textContent = 'جاري الاتصال...';
   el('retry-btn').style.display = 'none';
   try { CFG = JSON.parse(localStorage.getItem('8b_cfg') || '{}'); } catch(e) { CFG = {}; }
+  applyLogo();
 
   var saved = localStorage.getItem('8b_me');
   if (saved) {
@@ -747,6 +760,7 @@ function enterApp() {
   else { av.textContent = (ME.name || '?').charAt(0); }
   el('tb-name').textContent = ME.name;
   el('tb-role').textContent = RL[ME.role] || ME.role;
+  applyLogo();
 
   // Show/hide add employee button
   var addBtn = el('emp-add-btn');
@@ -1247,17 +1261,74 @@ function saveCPR() {
 // ═══════════════════════════════
 function loadRakaz() {
   var c = el('rakaz-content');
-  if (!CFG.rakazKey) { c.innerHTML = '<div class="empty">⚙️ أدخل مفاتيح ركاز من الإعدادات</div>'; return; }
-  c.innerHTML = '<div class="empty">جاري الجلب...</div>';
-  fetch('https://api.rakaz.io/v1/daily-summary?date=' + new Date().toISOString().slice(0, 10), {
-    headers: { 'Authorization': CFG.rakazKey, 'X-Tenant': CFG.rakazTenant || '' }
-  }).then(function(r) { return r.json(); }).then(function(d) {
-    c.innerHTML = '<div class="metrics">' +
-      '<div class="met"><div class="met-n">' + (d.total_revenue || 0) + '</div><div class="met-l">الإيرادات</div></div>' +
-      '<div class="met"><div class="met-n">' + (d.total_appointments || 0) + '</div><div class="met-l">المواعيد</div></div></div>' +
-      (d.barbers && d.barbers.length ? '<div class="card"><div class="card-hd"><span class="card-title">الحلاقون</span></div>' +
-        d.barbers.map(function(b) { return '<div class="row"><span>' + (b.name || '') + '</span><span class="badge bg">' + (b.revenue || 0) + ' ر</span></div>'; }).join('') + '</div>' : '');
-  }).catch(function() { c.innerHTML = '<div class="empty">⚠️ تعذر الاتصال بركاز</div>'; });
+  if (!CFG.rakazKey) {
+    c.innerHTML = '<div class="empty" style="padding:24px"><div style="font-size:32px;margin-bottom:12px">🔗</div><div style="margin-bottom:8px">أدخل مفاتيح ركاز من الإعدادات</div><button class="btn btn-y" onclick="empTab(null,\'em-s\');goScreen(\'employees\')">فتح الإعدادات</button></div>';
+    return;
+  }
+  c.innerHTML = '<div class="empty">جاري الجلب من ركاز...</div>';
+  // Try multiple possible Rakaz endpoints
+  var endpoints = [
+    'https://api.rakaz.io/v1/reports/daily?date=' + new Date().toISOString().slice(0,10),
+    'https://api.rakaz.io/v2/daily-summary?date=' + new Date().toISOString().slice(0,10),
+    'https://app.rakaz.io/api/v1/daily-summary?date=' + new Date().toISOString().slice(0,10)
+  ];
+  var today = new Date().toISOString().slice(0,10);
+  var tenantId = CFG.rakazTenant || '3a1c272c-c444-2b5c-ae45-dc0e2ccd5260';
+  var authKey = CFG.rakazKey || 'Basic N2ZhYjU4ZmRmZjEzNDA2YjlhZTUzNDZkOWU5Mzg0M2E6YTljZjczYmJhMjNjNDFlMGFmODY4NjNiOGQ4OWFlNTk=';
+
+  Promise.all([
+    fetch('https://api.rakaz.io/api/v1/appointments?date=' + today, {
+      headers: { 'Authorization': authKey, 'X-Tenant-ID': tenantId, 'Accept': 'application/json' }
+    }),
+    fetch('https://api.rakaz.io/api/v1/staff?date=' + today, {
+      headers: { 'Authorization': authKey, 'X-Tenant-ID': tenantId, 'Accept': 'application/json' }
+    })
+  ]).then(function(responses) {
+    return Promise.all(responses.map(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status + ' - ' + r.url.split('/').pop());
+      return r.json();
+    }));
+  }).then(function(data) {
+    var appts = data[0] || {};
+    var staff = data[1] || {};
+    var apptList = Array.isArray(appts) ? appts : (appts.data || appts.appointments || []);
+    var staffList = Array.isArray(staff) ? staff : (staff.data || staff.staff || []);
+    var totalRevenue = apptList.reduce(function(s,a){ return s + (a.price || a.amount || a.total || 0); }, 0);
+
+    var html = '<div class="metrics">';
+    html += '<div class="met"><div class="met-n">' + totalRevenue.toFixed(0) + '</div><div class="met-l">الإيرادات</div></div>';
+    html += '<div class="met"><div class="met-n">' + apptList.length + '</div><div class="met-l">المواعيد</div></div>';
+    html += '</div>';
+
+    if (staffList.length) {
+      html += '<div class="card"><div class="card-hd"><span class="card-title">الحلاقون</span></div>';
+      staffList.forEach(function(s) {
+        var rev = apptList.filter(function(a){ return a.staff_id === s.id || a.stylist_id === s.id; }).reduce(function(sum,a){ return sum+(a.price||a.amount||0); },0);
+        html += '<div class="row"><span>' + (s.name || s.full_name || '') + '</span><span class="badge bg">' + rev.toFixed(0) + ' ر</span></div>';
+      });
+      html += '</div>';
+    }
+
+    if (apptList.length) {
+      html += '<div class="card"><div class="card-hd"><span class="card-title">المواعيد اليوم</span></div>';
+      apptList.slice(0,8).forEach(function(a) {
+        var status = a.status === 'completed' ? 'bg' : a.status === 'cancelled' ? 'br' : 'bb';
+        html += '<div class="row"><div><div class="row-main">' + (a.client_name || a.customer_name || 'عميل') + '</div>';
+        html += '<div class="row-sub">' + (a.service_name || a.service || '') + (a.time ? ' | ' + a.time : '') + '</div></div>';
+        html += '<span class="badge ' + status + '">' + (a.price || a.amount || 0) + ' ر</span></div>';
+      });
+      html += '</div>';
+    }
+
+    c.innerHTML = html || '<div class="empty">لا توجد بيانات اليوم</div>';
+  }).catch(function(err) {
+    // Show raw response for debugging
+    c.innerHTML = '<div class="empty" style="padding:24px">' +
+      '<div style="font-size:28px;margin-bottom:8px">⚠️</div>' +
+      '<div style="margin-bottom:6px;font-weight:700">تعذر الاتصال بركاز</div>' +
+      '<div style="font-size:10px;color:var(--mt);background:var(--c2);padding:8px;border-radius:8px;text-align:left;direction:ltr">' + (err.message || 'unknown error') + '</div>' +
+      '<button class="btn btn-y" style="margin-top:12px" onclick="loadRakaz()">↻ إعادة المحاولة</button></div>';
+  });
 }
 
 // ═══════════════════════════════
