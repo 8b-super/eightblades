@@ -30,13 +30,16 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
 .pin-box{width:100%;max-width:400px;background:var(--c1);border:1px solid var(--bd);border-radius:14px;padding:18px 16px;display:none}
 .pin-who{font-size:14px;font-weight:700;margin-bottom:4px}
 .pin-sub{font-size:11px;color:var(--mt);margin-bottom:14px}
-.pin-dots{display:flex;gap:12px;justify-content:center;margin-bottom:14px}
-.pdot{width:14px;height:14px;border-radius:50%;border:2px solid var(--bd);transition:all .15s}
-.pdot.on{background:var(--yw);border-color:var(--yw)}
+.pin-dots{display:flex;gap:16px;justify-content:center;margin-bottom:20px}
+.pdot{width:16px;height:16px;border-radius:50%;border:2px solid var(--bd);transition:all .2s}
+.pdot.on{background:var(--yw);border-color:var(--yw);transform:scale(1.1)}
 .pin-err{font-size:11px;color:var(--rd);text-align:center;height:16px;margin-bottom:6px}
-.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.pkey{background:var(--c2);border:1px solid var(--bd);border-radius:12px;padding:14px;text-align:center;font-size:18px;font-weight:700;cursor:pointer;transition:all .1s;user-select:none}
-.pkey:active{background:var(--yw);color:var(--bk);border-color:var(--yw)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:300px;margin:0 auto}
+.pkey{background:var(--c2);border:1px solid var(--bd);border-radius:50%;width:72px;height:72px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:22px;font-weight:700;cursor:pointer;transition:all .15s;user-select:none;margin:0 auto;gap:1px}
+.pkey:active{background:var(--yw);color:#0a0a0a;border-color:var(--yw);transform:scale(.94)}
+.pkey-sub{font-size:8px;font-weight:600;color:var(--mt);letter-spacing:1px}
+.pkey:active .pkey-sub{color:#0a0a0a}
+.pkey-del{background:transparent;border:none;font-size:22px}
 .back-btn{font-size:11px;color:var(--mt);cursor:pointer;margin-bottom:10px;display:inline-block}
 
 /* App Shell */
@@ -193,12 +196,18 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
     </div>
     <div class="pin-err" id="pin-err"></div>
     <div class="pin-pad">
-      <div class="pkey" onclick="pk(1)">1</div><div class="pkey" onclick="pk(2)">2</div><div class="pkey" onclick="pk(3)">3</div>
-      <div class="pkey" onclick="pk(4)">4</div><div class="pkey" onclick="pk(5)">5</div><div class="pkey" onclick="pk(6)">6</div>
-      <div class="pkey" onclick="pk(7)">7</div><div class="pkey" onclick="pk(8)">8</div><div class="pkey" onclick="pk(9)">9</div>
+      <div class="pkey" onclick="pk(1)">1<span class="pkey-sub"></span></div>
+      <div class="pkey" onclick="pk(2)">2<span class="pkey-sub">ABC</span></div>
+      <div class="pkey" onclick="pk(3)">3<span class="pkey-sub">DEF</span></div>
+      <div class="pkey" onclick="pk(4)">4<span class="pkey-sub">GHI</span></div>
+      <div class="pkey" onclick="pk(5)">5<span class="pkey-sub">JKL</span></div>
+      <div class="pkey" onclick="pk(6)">6<span class="pkey-sub">MNO</span></div>
+      <div class="pkey" onclick="pk(7)">7<span class="pkey-sub">PQRS</span></div>
+      <div class="pkey" onclick="pk(8)">8<span class="pkey-sub">TUV</span></div>
+      <div class="pkey" onclick="pk(9)">9<span class="pkey-sub">WXYZ</span></div>
       <div class="pkey" style="visibility:hidden"></div>
-      <div class="pkey" onclick="pk(0)">0</div>
-      <div class="pkey" onclick="pdel()">⌫</div>
+      <div class="pkey" onclick="pk(0)">0<span class="pkey-sub">+</span></div>
+      <div class="pkey pkey-del" onclick="pdel()">⌫</div>
     </div>
   </div>
 </div>
