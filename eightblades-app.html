@@ -229,7 +229,7 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
     <div id="tb-logo" style="position:absolute;left:50%;transform:translateX(-50%)">✂ 8B</div>
     <div class="tb-btns">
       <button class="tbtn" onclick="toggleLang()" id="lang-btn" style="min-width:36px">EN</button>
-      <button class="tbtn yw" onclick="goHub()">🧭</button>
+      <button class="tbtn yw" id="hub-btn" onclick="goHub()" title="Employee Hub">🧭</button>
       <button class="tbtn" onclick="doLogout()" id="logout-btn">خروج</button>
     </div>
   </div>
@@ -240,12 +240,12 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
     <!-- Home -->
     <div class="screen on" id="s-home">
       <div class="sh">
-        <div><div class="sht" id="home-greet">مرحباً</div><div class="shs" id="home-date"></div></div>
+        <div><div class="sht" id="home-greet" data-i18n="">مرحباً</div><div class="shs" id="home-date"></div></div>
       </div>
       <div class="metrics" id="home-metrics"></div>
       <div id="home-alert"></div>
       <div class="card">
-        <div class="card-hd"><span class="card-title">آخر العمليات</span></div>
+        <div class="card-hd"><span class="card-title" data-i18n="latestOps">آخر العمليات</span></div>
         <div id="home-log"></div>
       </div>
     </div>
@@ -254,10 +254,10 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
     <div class="screen" id="s-request">
       <div class="sh"><div class="sht">طلب جديد</div></div>
       <div class="req-grid">
-        <div class="req-btn" onclick="openM('m-wd')"><div class="req-ico">📦</div><div class="req-lbl">صرف منتج</div></div>
-        <div class="req-btn" onclick="openM('m-sl')"><div class="req-ico">💵</div><div class="req-lbl">بيع لعميل</div></div>
-        <div class="req-btn" onclick="openM('m-ft')"><div class="req-ico">🔧</div><div class="req-lbl">بلاغ عطل</div></div>
-        <div class="req-btn" onclick="openM('m-pr')"><div class="req-ico">🛒</div><div class="req-lbl">طلب شراء</div></div>
+        <div class="req-btn" onclick="openM('m-wd')"><div class="req-ico">📦</div><div class="req-lbl" data-i18n="dispense">صرف منتج</div></div>
+        <div class="req-btn" onclick="openM('m-sl')"><div class="req-ico">💵</div><div class="req-lbl" data-i18n="sell">بيع لعميل</div></div>
+        <div class="req-btn" onclick="openM('m-ft')"><div class="req-ico">🔧</div><div class="req-lbl" data-i18n="fault">بلاغ عطل</div></div>
+        <div class="req-btn" onclick="openM('m-pr')"><div class="req-ico">🛒</div><div class="req-lbl" data-i18n="purchase">طلب شراء</div></div>
       </div>
       <div class="card">
         <div class="card-hd"><span class="card-title">سجل اليوم</span><span class="badge bb" id="today-cnt">0</span></div>
@@ -270,9 +270,9 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
       <div class="sh"><div class="sht">المخزون</div><button class="btn btn-y" onclick="openM('m-ap')">+ منتج</button></div>
       <div id="inv-alert"></div>
       <div class="tabs">
-        <div class="tab on" onclick="invTab(this,'iv-p')">المنتجات</div>
-        <div class="tab" onclick="invTab(this,'iv-a')">الأصول</div>
-        <div class="tab" onclick="invTab(this,'iv-o')">طلبات الشراء</div>
+        <div class="tab on" onclick="invTab(this,'iv-p')" data-i18n="products">المنتجات</div>
+        <div class="tab" onclick="invTab(this,'iv-a')" data-i18n="assets">الأصول</div>
+        <div class="tab" onclick="invTab(this,'iv-o')" data-i18n="orders">طلبات الشراء</div>
       </div>
       <div id="iv-p"></div>
       <div id="iv-a" style="display:none"></div>
@@ -290,9 +290,9 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
       <div class="sh"><div class="sht">المالية</div></div>
       <div class="metrics" id="fin-metrics"></div>
       <div class="tabs">
-        <div class="tab on" onclick="finTab(this,'fn-p')">طلبات الشراء</div>
-        <div class="tab" onclick="finTab(this,'fn-e')">المصروفات</div>
-        <div class="tab" onclick="finTab(this,'fn-b')">الميزانيات</div>
+        <div class="tab on" onclick="finTab(this,'fn-p')" data-i18n="purchaseReqs">طلبات الشراء</div>
+        <div class="tab" onclick="finTab(this,'fn-e')" data-i18n="expenses">المصروفات</div>
+        <div class="tab" onclick="finTab(this,'fn-b')" data-i18n="budgets">الميزانيات</div>
       </div>
       <div id="fn-p"></div>
       <div id="fn-e" style="display:none"></div>
@@ -323,11 +323,11 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
     <div class="screen" id="s-employees">
       <div class="sh"><div class="sht">الموظفون</div><button class="btn btn-y" id="emp-add-btn" onclick="openAddEmp()">+ موظف</button></div>
       <div class="tabs">
-        <div class="tab on" onclick="empTab(this,'em-c')">الموظفون</div>
-        <div class="tab" onclick="empTab(this,'em-b')">الفروع</div>
-        <div class="tab" onclick="empTab(this,'em-cl')">قوائم التحقق</div>
-        <div class="tab" onclick="empTab(this,'em-r')">المرجع</div>
-        <div class="tab" onclick="empTab(this,'em-s')">الإعدادات</div>
+        <div class="tab on" onclick="empTab(this,'em-c')" data-i18n="emp_lbl">الموظفون</div>
+        <div class="tab" onclick="empTab(this,'em-b')" data-i18n="branches">الفروع</div>
+        <div class="tab" onclick="empTab(this,'em-cl')" data-i18n="checklists">قوائم التحقق</div>
+        <div class="tab" onclick="empTab(this,'em-r')" data-i18n="refs">المرجع</div>
+        <div class="tab" onclick="empTab(this,'em-s')" data-i18n="settings">الإعدادات</div>
       </div>
       <div id="em-c"></div>
       <div id="em-b" style="display:none"></div>
@@ -645,9 +645,23 @@ var T = {
     loadingData: 'جاري التحميل...',
     logout: 'خروج',
     back: '← رجوع',
+    hub: 'مركز الموظفين',
     home: 'الرئيسية', request: 'الطلبات', inventory: 'المخزون',
     maintenance: 'الصيانة', finance: 'المالية', approvals: 'الاعتماد',
     rakaz: 'ركاز', employees: 'الموظفون',
+    newRequest: 'طلب جديد',
+    dispense: 'صرف منتج', sell: 'بيع لعميل', fault: 'بلاغ عطل', purchase: 'طلب شراء',
+    todayLog: 'سجل اليوم',
+    inventory_lbl: 'المخزون', products: 'المنتجات', assets: 'الأصول', orders: 'طلبات الشراء',
+    addProduct: '+ منتج', addAsset: '+ أصل',
+    maint_lbl: 'الصيانة',
+    finance_lbl: 'المالية', purchaseReqs: 'طلبات الشراء', expenses: 'المصروفات', budgets: 'الميزانيات',
+    approvals_lbl: 'الموافقات',
+    emp_lbl: 'الموظفون', branches: 'الفروع', checklists: 'قوائم التحقق', refs: 'المرجع', settings: 'الإعدادات',
+    addEmp: '+ موظف',
+    greetMorning: 'صباح الخير', greetAfternoon: 'مساء الخير', greetEvening: 'مساء النور',
+    opsToday: 'عمليات اليوم', openMaint: 'صيانة مفتوحة', pendingReqs: 'طلبات معلقة', lowStock: 'مخزون منخفض',
+    latestOps: 'آخر العمليات',
     roles: { manager:'مدير', reception:'استقبال', finance:'مالية', stock:'مخزون', purchase:'مشتريات', maintenance:'صيانة', custom:'مخصص' }
   },
   en: {
@@ -658,9 +672,23 @@ var T = {
     loadingData: 'Loading...',
     logout: 'Logout',
     back: '← Back',
+    hub: 'Employee Hub',
     home: 'Home', request: 'Requests', inventory: 'Inventory',
     maintenance: 'Maintenance', finance: 'Finance', approvals: 'Approvals',
     rakaz: 'Rakaz', employees: 'Employees',
+    newRequest: 'New Request',
+    dispense: 'Dispense Product', sell: 'Sell to Client', fault: 'Report Fault', purchase: 'Purchase Request',
+    todayLog: 'Today Log',
+    inventory_lbl: 'Inventory', products: 'Products', assets: 'Assets', orders: 'Purchase Orders',
+    addProduct: '+ Product', addAsset: '+ Asset',
+    maint_lbl: 'Maintenance',
+    finance_lbl: 'Finance', purchaseReqs: 'Purchase Requests', expenses: 'Expenses', budgets: 'Budgets',
+    approvals_lbl: 'Approvals',
+    emp_lbl: 'Employees', branches: 'Branches', checklists: 'Checklists', refs: 'Reference', settings: 'Settings',
+    addEmp: '+ Employee',
+    greetMorning: 'Good morning', greetAfternoon: 'Good afternoon', greetEvening: 'Good evening',
+    opsToday: 'Operations today', openMaint: 'Open maintenance', pendingReqs: 'Pending requests', lowStock: 'Low stock',
+    latestOps: 'Latest Operations',
     roles: { manager:'Manager', reception:'Reception', finance:'Finance', stock:'Stock', purchase:'Purchase', maintenance:'Maintenance', custom:'Custom' }
   }
 };
@@ -674,28 +702,62 @@ function toggleLang() {
 }
 
 function applyLang() {
-  var html = document.documentElement;
-  var langBtn = document.getElementById('lang-btn');
-  var lgSub = document.getElementById('lg-sub-txt');
-  var pinSub = document.getElementById('pin-sub-txt');
+  var isEn = LANG === 'en';
+  var root = document.documentElement;
+  root.setAttribute('dir', isEn ? 'ltr' : 'rtl');
+  root.setAttribute('lang', isEn ? 'en' : 'ar');
 
-  if (LANG === 'en') {
-    html.setAttribute('dir', 'ltr');
-    html.setAttribute('lang', 'en');
-    if (langBtn) langBtn.textContent = 'ع';
-    if (lgSub) lgSub.textContent = t('chooseUser');
-    if (pinSub) pinSub.textContent = t('enterPin');
-  } else {
-    html.setAttribute('dir', 'rtl');
-    html.setAttribute('lang', 'ar');
-    if (langBtn) langBtn.textContent = 'EN';
-    if (lgSub) lgSub.textContent = t('chooseUser');
-    if (pinSub) pinSub.textContent = t('enterPin');
+  // Lang button
+  var langBtn = el('lang-btn');
+  if (langBtn) langBtn.textContent = isEn ? 'ع' : 'EN';
+
+  // Login screen
+  var lgSub = el('lg-sub-txt');
+  var pinSub = el('pin-sub-txt');
+  if (lgSub) lgSub.textContent = t('chooseUser');
+  if (pinSub) pinSub.textContent = t('enterPin');
+
+  // Topbar
+  var logoutBtn = el('logout-btn');
+  if (logoutBtn) logoutBtn.textContent = t('logout');
+  var hubBtn = el('hub-btn');
+  if (hubBtn) hubBtn.title = t('hub');
+
+  // Loading text
+  var ldTxt = el('ld-txt');
+  if (ldTxt && ldTxt.textContent) ldTxt.textContent = t('loading');
+
+  // Back buttons
+  document.querySelectorAll('.back-btn').forEach(function(b) { b.innerHTML = t('back'); });
+
+  // Screen titles - update all data-i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(function(el) {
+    var key = el.getAttribute('data-i18n');
+    if (T[LANG] && T[LANG][key]) el.textContent = T[LANG][key];
+  });
+
+  // Re-render nav
+  if (el('app') && el('app').style.display !== 'none') {
+    buildNav();
+    // Re-render employee role in topbar
+    var tbRole = el('tb-role');
+    if (tbRole && ME) tbRole.textContent = RL(ME.role);
+    // Reload current screen
+    var activeScreen = document.querySelector('.screen.on');
+    if (activeScreen) {
+      var sid = activeScreen.id.replace('s-','');
+      if (sid === 'home') loadHome();
+      else if (sid === 'request') loadRequest();
+      else if (sid === 'inventory') loadInventory();
+      else if (sid === 'maintenance') loadMaintenance();
+      else if (sid === 'finance') loadFinance();
+      else if (sid === 'approvals') loadApprovals();
+      else if (sid === 'employees') loadEmployees();
+    }
   }
-  // Re-render users if visible
-  if (document.getElementById('lg').style.display !== 'none' && EMPS.length) renderUsers();
-  // Re-render nav if in app
-  if (document.getElementById('app').style.display !== 'none') buildNav();
+
+  // Re-render users if on login
+  if (el('lg') && el('lg').style.display !== 'none' && EMPS.length) renderUsers();
 }
 var EMPS = [], PRODS = [], ASSETS = [], BRANCHES = [];
 var AP_FILTER = 'all', AP_PR_ID = null, EP_PR_ID = null, CP_PR_ID = null;
@@ -1017,7 +1079,8 @@ function goBack() {
 // ═══════════════════════════════
 function loadHome() {
   var hr = new Date().getHours();
-  el('home-greet').textContent = (hr < 12 ? 'صباح الخير' : hr < 17 ? 'مساء الخير' : 'مساء النور') + '، ' + (ME.name.split(' ')[0] || ME.name);
+  var greetKey = hr < 12 ? 'greetMorning' : hr < 17 ? 'greetAfternoon' : 'greetEvening';
+  el('home-greet').textContent = t(greetKey) + ', ' + (ME.name.split(' ')[0] || ME.name);
   el('home-date').textContent = new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   var today = new Date().toISOString().split('T')[0];
   Promise.all([
@@ -1026,12 +1089,12 @@ function loadHome() {
     GET('purchase_requests', 'select=id&status=eq.بانتظار الموافقة'),
     GET('products', 'select=id&store=lt.min_level')
   ]).then(function(r) {
-    var a = (r[0]||[]).length, b = (r[1]||[]).length, c = (r[2]||[]).length, d = (r[3]||[]).length;
+    var a = (r[0]||[]).length, b = (r[1]||[]).length, c2 = (r[2]||[]).length, d = (r[3]||[]).length;
     el('home-metrics').innerHTML =
-      '<div class="met"><div class="met-n">' + a + '</div><div class="met-l">عمليات اليوم</div></div>' +
-      '<div class="met' + (b ? ' warn' : '') + '"><div class="met-n">' + b + '</div><div class="met-l">صيانة مفتوحة</div></div>' +
-      '<div class="met' + (c ? ' warn' : '') + '"><div class="met-n">' + c + '</div><div class="met-l">طلبات معلقة</div></div>' +
-      '<div class="met' + (d ? ' danger' : '') + '"><div class="met-n">' + d + '</div><div class="met-l">مخزون منخفض</div></div>';
+      '<div class="met"><div class="met-n">' + a + '</div><div class="met-l">' + t('opsToday') + '</div></div>' +
+      '<div class="met' + (b ? ' warn' : '') + '"><div class="met-n">' + b + '</div><div class="met-l">' + t('openMaint') + '</div></div>' +
+      '<div class="met' + (c2 ? ' warn' : '') + '"><div class="met-n">' + c2 + '</div><div class="met-l">' + t('pendingReqs') + '</div></div>' +
+      '<div class="met' + (d ? ' danger' : '') + '"><div class="met-n">' + d + '</div><div class="met-l">' + t('lowStock') + '</div></div>';
     if (d > 0) {
       GET('products', 'select=name,store&store=lt.min_level').then(function(rows) {
         el('home-alert').innerHTML = '<div class="alert alert-r">⚠️ مخزون منخفض: ' + (rows || []).map(function(r) { return r.name + '(' + r.store + ')'; }).join(' ، ') + '</div>';
