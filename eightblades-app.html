@@ -184,18 +184,21 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
 <!-- Login -->
 <div id="lg">
   <div id="lg-logo"><div class="ld-logo">✂ EIGHT BLADES</div></div>
-  <div class="lg-sub">اختر اسمك</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;width:100%;max-width:400px">
+    <div class="lg-sub" id="lg-sub-txt">اختر اسمك</div>
+    <button onclick="toggleLang()" id="lang-btn" style="background:var(--c2);border:1px solid var(--bd);border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--tx)">EN</button>
+  </div>
   <div id="usr-list" style="width:100%;max-width:400px;display:flex;flex-direction:column;gap:8px"></div>
   <div class="pin-box" id="pin-box">
     <span class="back-btn" onclick="backToUsers()">← رجوع</span>
     <div class="pin-who" id="pin-who"></div>
-    <div class="pin-sub">أدخل الرمز السري</div>
+    <div class="pin-sub" id="pin-sub-txt">أدخل الرمز السري</div>
     <div class="pin-dots">
       <div class="pdot" id="d0"></div><div class="pdot" id="d1"></div>
       <div class="pdot" id="d2"></div><div class="pdot" id="d3"></div>
     </div>
     <div class="pin-err" id="pin-err"></div>
-    <div class="pin-pad">
+    <div class="pin-pad" dir="ltr">
       <div class="pkey" onclick="pk(1)">1<span class="pkey-sub"></span></div>
       <div class="pkey" onclick="pk(2)">2<span class="pkey-sub">ABC</span></div>
       <div class="pkey" onclick="pk(3)">3<span class="pkey-sub">DEF</span></div>
@@ -226,7 +229,7 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
     <div id="tb-logo" style="position:absolute;left:50%;transform:translateX(-50%)">✂ 8B</div>
     <div class="tb-btns">
       <button class="tbtn yw" onclick="goHub()">🧭</button>
-      <button class="tbtn" onclick="doLogout()">خروج</button>
+      <button class="tbtn" onclick="doLogout()" id="logout-btn">خروج</button>
     </div>
   </div>
 
@@ -578,6 +581,69 @@ var SB = 'https://twdehehmddckkzykagjl.supabase.co';
 var SK = 'sb_publishable_JDEByCIJNF29WaGfKJ-uFw_PSdGkJDG';
 
 var ME = null, CFG = {}, SEL = null, PIN = '';
+var LANG = localStorage.getItem('8b_lang') || 'ar';
+
+var T = {
+  ar: {
+    chooseUser: 'اختر اسمك',
+    enterPin: 'أدخل الرمز السري',
+    wrongPin: '✗ رمز خاطئ',
+    loading: 'جاري الاتصال...',
+    loadingData: 'جاري التحميل...',
+    logout: 'خروج',
+    back: '← رجوع',
+    home: 'الرئيسية', request: 'الطلبات', inventory: 'المخزون',
+    maintenance: 'الصيانة', finance: 'المالية', approvals: 'الاعتماد',
+    rakaz: 'ركاز', employees: 'الموظفون',
+    roles: { manager:'مدير', reception:'استقبال', finance:'مالية', stock:'مخزون', purchase:'مشتريات', maintenance:'صيانة', custom:'مخصص' }
+  },
+  en: {
+    chooseUser: 'Select your name',
+    enterPin: 'Enter your PIN',
+    wrongPin: '✗ Wrong PIN',
+    loading: 'Connecting...',
+    loadingData: 'Loading...',
+    logout: 'Logout',
+    back: '← Back',
+    home: 'Home', request: 'Requests', inventory: 'Inventory',
+    maintenance: 'Maintenance', finance: 'Finance', approvals: 'Approvals',
+    rakaz: 'Rakaz', employees: 'Employees',
+    roles: { manager:'Manager', reception:'Reception', finance:'Finance', stock:'Stock', purchase:'Purchase', maintenance:'Maintenance', custom:'Custom' }
+  }
+};
+
+function t(key) { return (T[LANG] && T[LANG][key]) || (T['ar'][key]) || key; }
+
+function toggleLang() {
+  LANG = LANG === 'ar' ? 'en' : 'ar';
+  localStorage.setItem('8b_lang', LANG);
+  applyLang();
+}
+
+function applyLang() {
+  var html = document.documentElement;
+  var langBtn = document.getElementById('lang-btn');
+  var lgSub = document.getElementById('lg-sub-txt');
+  var pinSub = document.getElementById('pin-sub-txt');
+
+  if (LANG === 'en') {
+    html.setAttribute('dir', 'ltr');
+    html.setAttribute('lang', 'en');
+    if (langBtn) langBtn.textContent = 'ع';
+    if (lgSub) lgSub.textContent = t('chooseUser');
+    if (pinSub) pinSub.textContent = t('enterPin');
+  } else {
+    html.setAttribute('dir', 'rtl');
+    html.setAttribute('lang', 'ar');
+    if (langBtn) langBtn.textContent = 'EN';
+    if (lgSub) lgSub.textContent = t('chooseUser');
+    if (pinSub) pinSub.textContent = t('enterPin');
+  }
+  // Re-render users if visible
+  if (document.getElementById('lg').style.display !== 'none' && EMPS.length) renderUsers();
+  // Re-render nav if in app
+  if (document.getElementById('app').style.display !== 'none') buildNav();
+}
 var EMPS = [], PRODS = [], ASSETS = [], BRANCHES = [];
 var AP_FILTER = 'all', AP_PR_ID = null, EP_PR_ID = null, CP_PR_ID = null;
 var CUR_PROD_ID = null, CUR_BR_ID = null;
@@ -669,6 +735,7 @@ function boot() {
   el('retry-btn').style.display = 'none';
   try { CFG = JSON.parse(localStorage.getItem('8b_cfg') || '{}'); } catch(e) { CFG = {}; }
   applyLogo();
+  applyLang();
   // Load config from Supabase in background
   loadCFGFromDB();
 
@@ -722,7 +789,7 @@ function loadAll(cb) {
 // ═══════════════════════════════
 // LOGIN
 // ═══════════════════════════════
-var RL = { manager: 'مدير', reception: 'استقبال', finance: 'مالية', stock: 'مخزون', purchase: 'مشتريات', maintenance: 'صيانة', custom: 'مخصص' };
+function RL(role) { return (T[LANG] && T[LANG].roles && T[LANG].roles[role]) || role; }
 
 function renderUsers() {
   var c = el('usr-list');
@@ -730,7 +797,7 @@ function renderUsers() {
   c.innerHTML = EMPS.map(function(e) {
     return '<div class="usr-card" onclick="selUser(\'' + e.id + '\')">' +
       (e.photo ? '<img src="' + e.photo + '" style="width:40px;height:40px;border-radius:50%;object-fit:cover">' : '<div class="usr-av">' + (e.name || '?').charAt(0) + '</div>') +
-      '<div><div class="usr-name">' + e.name + '</div><div class="usr-role">' + (RL[e.role] || e.role) + '</div></div>' +
+      '<div><div class="usr-name">' + e.name + '</div><div class="usr-role">' + (RL(e.role)) + '</div></div>' +
       '<div style="margin-right:auto;color:var(--mt)">›</div></div>';
   }).join('');
 }
@@ -791,7 +858,7 @@ function enterApp() {
   if (ME.photo) av.innerHTML = '<img src="' + ME.photo + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
   else { av.textContent = (ME.name || '?').charAt(0); }
   el('tb-name').textContent = ME.name;
-  el('tb-role').textContent = RL[ME.role] || ME.role;
+  el('tb-role').textContent = RL(ME.role);
   applyLogo();
 
   // Show/hide add employee button
@@ -800,6 +867,8 @@ function enterApp() {
 
   buildNav();
   addBackButtons();
+  applyLang();
+  var lb = document.getElementById('logout-btn'); if(lb) lb.textContent = t('logout');
   goScreen('home');
 }
 function addBackButtons() {
@@ -830,14 +899,14 @@ function doLogout() {
 // NAV
 // ═══════════════════════════════
 var NAV = [
-  { id: 'home', ic: '🏠', lb: 'الرئيسية' },
-  { id: 'request', ic: '📋', lb: 'الطلبات' },
-  { id: 'inventory', ic: '📦', lb: 'المخزون' },
-  { id: 'maintenance', ic: '🔧', lb: 'الصيانة' },
-  { id: 'finance', ic: '💰', lb: 'المالية' },
-  { id: 'approvals', ic: '✅', lb: 'الاعتماد' },
-  { id: 'rakaz', ic: '📊', lb: 'ركاز' },
-  { id: 'employees', ic: '👥', lb: 'الموظفون' }
+  { id: 'home', ic: '🏠', key: 'home' },
+  { id: 'request', ic: '📋', key: 'request' },
+  { id: 'inventory', ic: '📦', key: 'inventory' },
+  { id: 'maintenance', ic: '🔧', key: 'maintenance' },
+  { id: 'finance', ic: '💰', key: 'finance' },
+  { id: 'approvals', ic: '✅', key: 'approvals' },
+  { id: 'rakaz', ic: '📊', key: 'rakaz' },
+  { id: 'employees', ic: '👥', key: 'employees' }
 ];
 var RPERMS = {
   manager: ['home','request','inventory','maintenance','finance','approvals','rakaz','employees'],
@@ -860,7 +929,7 @@ function canSee(s) {
 function buildNav() {
   el('nav').innerHTML = NAV.filter(function(n) { return canSee(n.id); }).map(function(n) {
     return '<div class="nit" id="ni-' + n.id + '" onclick="goScreen(\'' + n.id + '\')">' +
-      '<span class="nic">' + n.ic + '</span><span class="nlb">' + n.lb + '</span></div>';
+      '<span class="nic">' + n.ic + '</span><span class="nlb">' + t(n.key) + '</span></div>';
   }).join('');
 }
 
@@ -1390,7 +1459,7 @@ function renderEmps() {
     c.innerHTML = '<div class="card">' + EMPS.map(function(e) {
       return '<div class="row' + (e.active === false ? ' emp-dis' : '') + '">' +
         (e.photo ? '<img src="' + e.photo + '" style="width:38px;height:38px;border-radius:50%;object-fit:cover">' : '<div class="usr-av">' + (e.name || '?').charAt(0) + '</div>') +
-        '<div style="flex:1"><div class="row-main">' + e.name + '</div><div class="row-sub">' + (RL[e.role] || e.role) + (e.title ? ' | ' + e.title : '') + '</div></div>' +
+        '<div style="flex:1"><div class="row-main">' + e.name + '</div><div class="row-sub">' + (RL(e.role)) + (e.title ? ' | ' + e.title : '') + '</div></div>' +
         (isManager ? '<div style="display:flex;gap:6px"><button class="btn-sm" onclick="openEditEmp(\'' + e.id + '\')">✏️</button>' +
           '<button class="btn-sm" style="color:' + (e.active !== false ? 'var(--rd)' : 'var(--gr)') + '" onclick="toggleEmp(\'' + e.id + '\',' + (e.active !== false) + ')">' + (e.active !== false ? '⏸' : '▶') + '</button></div>' : '') +
         '</div>';
