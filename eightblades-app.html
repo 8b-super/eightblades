@@ -847,65 +847,59 @@ function applyLogo() {
 }
 function boot() {
   el('retry-btn').style.display = 'none';
-  // Load local config instantly
   try { CFG = JSON.parse(localStorage.getItem('8b_cfg') || '{}'); } catch(e) { CFG = {}; }
   applyLogo();
   applyLang();
 
-  // Check saved session — enter app immediately
+  // If logged in — enter immediately
   var saved = localStorage.getItem('8b_me');
   if (saved) {
     try { ME = JSON.parse(saved); } catch(e) {}
     if (ME && ME.id) {
-      // Load cached employees first for instant display
       try { EMPS = JSON.parse(localStorage.getItem('8b_emps') || '[]'); } catch(e) { EMPS = []; }
       enterApp();
-      // Refresh data in background silently
-      loadAll(function() {});
-      loadCFGFromDB();
+      loadAll(function() {}); // background refresh
       return;
     }
   }
 
-  // No session — check cached employees for instant login screen
-  var cachedEmps = null;
-  try { cachedEmps = JSON.parse(localStorage.getItem('8b_emps') || 'null'); } catch(e) {}
-
-  if (cachedEmps && cachedEmps.length) {
-    // Show login screen instantly from cache
-    EMPS = cachedEmps.filter(function(e) { return e.active !== false; });
+  // Show login — use cache if available, else fetch
+  var cached = null;
+  try { cached = JSON.parse(localStorage.getItem('8b_emps') || 'null'); } catch(e) {}
+  if (cached && cached.length) {
+    EMPS = cached.filter(function(e) { return e.active !== false; });
     el('ld').style.display = 'none';
     el('lg').style.display = 'flex';
     renderUsers();
-    // Refresh employees from Supabase in background
+    // Refresh silently
     GET('employees', 'select=id,name,title,role,pin,photo,active&order=name').then(function(rows) {
       if (!Array.isArray(rows)) return;
       localStorage.setItem('8b_emps', JSON.stringify(rows));
       EMPS = rows.filter(function(e) { return e.active !== false; });
-      // Only re-render if still on login screen
       if (el('lg').style.display !== 'none') renderUsers();
     }).catch(function() {});
-    loadCFGFromDB();
     return;
   }
 
-  // First time — must load from Supabase
+  // First open — fetch with timeout
   el('ld-txt').textContent = 'جاري الاتصال...';
+  var done = false;
+  var timer = setTimeout(function() {
+    if (!done) { done = true; showLdErr('انتهت مهلة الاتصال'); }
+  }, 10000);
   GET('employees', 'select=id,name,title,role,pin,photo,active&order=name')
     .then(function(rows) {
-      if (!Array.isArray(rows)) {
-        showLdErr('خطأ: ' + (rows.message || rows.hint || JSON.stringify(rows).slice(0, 80)));
-        return;
-      }
+      clearTimeout(timer); if (done) return; done = true;
+      if (!Array.isArray(rows)) { showLdErr('خطأ: ' + (rows.message || rows.hint || '')); return; }
       localStorage.setItem('8b_emps', JSON.stringify(rows));
       EMPS = rows.filter(function(e) { return e.active !== false; });
       el('ld').style.display = 'none';
       el('lg').style.display = 'flex';
       renderUsers();
-      loadCFGFromDB();
     })
     .catch(function(err) {
-      showLdErr('تعذر الاتصال: ' + (err.message || 'network error'));
+      clearTimeout(timer); if (done) return; done = true;
+      showLdErr('تعذر الاتصال: ' + (err.message || ''));
     });
 }
 
