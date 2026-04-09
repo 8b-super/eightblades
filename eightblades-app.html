@@ -172,7 +172,7 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
 
 <!-- Loading -->
 <div id="ld">
-  <div class="ld-logo">✂ EIGHT BLADES</div>
+  <div id="ld-logo-wrap"><div class="ld-logo">✂ EIGHT BLADES</div></div>
   <div class="ld-bar"><div class="ld-fill"></div></div>
   <div class="ld-txt" id="ld-txt">جاري الاتصال...</div>
   <button class="retry-btn" id="retry-btn" onclick="boot()">🔄 إعادة المحاولة</button>
@@ -180,7 +180,7 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
 
 <!-- Login -->
 <div id="lg">
-  <div class="ld-logo" id="lg-logo">✂ EIGHT BLADES</div>
+  <div id="lg-logo"><div class="ld-logo">✂ EIGHT BLADES</div></div>
   <div class="lg-sub">اختر اسمك</div>
   <div id="usr-list" style="width:100%;max-width:400px;display:flex;flex-direction:column;gap:8px"></div>
   <div class="pin-box" id="pin-box">
@@ -206,7 +206,7 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
 <!-- App -->
 <div id="app">
   <!-- Topbar -->
-  <div class="topbar">
+  <div class="topbar" style="position:relative">
     <div style="display:flex;align-items:center;gap:10px">
       <div class="tb-av" id="tb-av">?</div>
       <div class="tb-info">
@@ -214,7 +214,7 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
         <div class="tb-role" id="tb-role"></div>
       </div>
     </div>
-    <div class="tb-logo" id="tb-logo">✂ 8B</div>
+    <div id="tb-logo" style="position:absolute;left:50%;transform:translateX(-50%)">✂ 8B</div>
     <div class="tb-btns">
       <button class="tbtn yw" onclick="goHub()">🧭</button>
       <button class="tbtn" onclick="doLogout()">خروج</button>
@@ -646,14 +646,14 @@ function saveCFGToDB(key, value) {
 function applyLogo() {
   if (!CFG.logo) return;
   // Loading screen
-  var ldLogo = el('ld') ? el('ld').querySelector('.ld-logo') : null;
-  if (ldLogo) ldLogo.innerHTML = '<img src="' + CFG.logo + '" style="height:40px;border-radius:8px;object-fit:cover">';
+  var ldWrap = el('ld-logo-wrap');
+  if (ldWrap) ldWrap.innerHTML = '<img src="' + CFG.logo + '" style="height:80px;border-radius:16px;object-fit:cover;box-shadow:0 4px 20px rgba(0,0,0,.4)">';
   // Login screen
   var lgLogo = el('lg-logo');
-  if (lgLogo) lgLogo.innerHTML = '<img src="' + CFG.logo + '" style="height:40px;border-radius:8px;object-fit:cover">';
-  // Topbar
+  if (lgLogo) lgLogo.innerHTML = '<img src="' + CFG.logo + '" style="height:80px;border-radius:16px;object-fit:cover;box-shadow:0 4px 20px rgba(0,0,0,.4)">';
+  // Topbar center
   var tbLogo = el('tb-logo');
-  if (tbLogo) tbLogo.innerHTML = '<img src="' + CFG.logo + '" style="height:28px;border-radius:6px;object-fit:cover">';
+  if (tbLogo) tbLogo.innerHTML = '<img src="' + CFG.logo + '" style="height:32px;border-radius:8px;object-fit:cover">';
 }
 function boot() {
   el('ld-txt').textContent = 'جاري الاتصال...';
@@ -1618,7 +1618,8 @@ function renderSettings() {
     '<div class="card-title" style="margin-bottom:12px">🎨 هوية التطبيق</div>' +
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">' +
     '<div id="logo-preview">' + logoHTML + '</div>' +
-    '<label style="flex:1;background:var(--c2);border:1px solid var(--bd);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:12px;font-weight:700">📤 رفع لوقو<input type="file" id="logo-file" accept="image/*" style="display:none" onchange="uploadLogo(this)"></label>' +
+    '<div style="flex:1"><label style="display:block;background:var(--c2);border:1px solid var(--bd);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;margin-bottom:6px">📤 رفع لوقو<input type="file" id="logo-file" accept="image/*" style="display:none" onchange="uploadLogo(this)"></label>' +
+    '<div style="font-size:10px;color:var(--mt);text-align:center">PNG أو JPG | مربع 1:1 | الحجم المثالي 200×200px | أقصى حجم 2MB</div></div>' +
     '</div>' +
     '<div class="fg"><label>اسم التطبيق</label><input type="text" id="set-name" value="' + (CFG.appName || 'Eight Blades') + '"></div>' +
     '<button class="btn btn-y" style="width:100%;margin-bottom:16px" onclick="saveIdentity()">✓ حفظ الهوية</button>' +
