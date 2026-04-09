@@ -475,7 +475,7 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
 
 <!-- Add Budget -->
 <div class="mbg" id="m-bud"><div class="modal"><div class="mhandle"></div><div class="minner">
-  <div class="mtitle">💰 ميزانية جديدة</div>
+  <div class="mtitle" id="bud-modal-title">💰 ميزانية جديدة</div>
   <div class="fg"><label>الاسم</label><input type="text" id="bud-name" placeholder="مثال: ميزانية المخزون"></div>
   <div class="fgr">
     <div class="fg"><label>القسم</label><select id="bud-dept"><option>مخزون</option><option>صيانة</option><option>استقبال</option><option>عام</option></select></div>
@@ -1371,8 +1371,11 @@ function renderBuds() {
     c.innerHTML += '<div class="card">' + rows.map(function(r) {
       var pct = r.amount > 0 ? Math.min(100, Math.round((r.spent || 0) / r.amount * 100)) : 0;
       var clr = pct >= 90 ? '#ef4444' : pct >= 70 ? '#f97316' : '#22c55e';
+      var budBtns = (ME.role==='manager'||ME.role==='finance') ?
+        '<button class="btn-sm" onclick="openEditBud(\'' + r.id + '\')">✏️</button>' +
+        '<button class="btn-sm" style="color:var(--gr)" onclick="addSpent(\'' + r.id + '\',' + (r.spent||0) + ',' + r.amount + ')">صرف+</button>' : '';
       return '<div class="row" style="flex-direction:column;align-items:stretch;gap:6px">' +
-        '<div style="display:flex;justify-content:space-between"><b>' + (r.name || '') + '</b><span class="badge bb">' + (r.month || '') + '</span></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center"><b>' + (r.name || '') + '</b><div style="display:flex;gap:5px;align-items:center"><span class="badge bb">' + (r.month || '') + '</span>' + budBtns + '</div></div>' +
         '<div class="bar-wrap"><div class="bar-fill" style="background:' + clr + ';width:' + pct + '%"></div></div>' +
         '<div style="font-size:10px;color:var(--mt)">' + (r.spent || 0) + ' / ' + r.amount + ' ريال (' + pct + '%)</div></div>';
     }).join('') + '</div>';
@@ -1395,11 +1398,35 @@ function decidePR(status) {
     toast(status === 'معتمد' ? 'تم الاعتماد ✓' : 'تم الرفض'); closeM('m-appr'); AP_PR_ID = null; renderPRs();
   }).catch(function(e) { toast('خطأ', 'err'); });
 }
+var CUR_BUD_ID = null;
+function openAddBud() {
+  CUR_BUD_ID = null;
+  sv('bud-name',''); sv('bud-dept','عام'); sv('bud-month',''); sv('bud-amount',0);
+  var mt=el('bud-modal-title'); if(mt) mt.textContent='💰 ميزانية جديدة';
+  openM('m-bud');
+}
+function openEditBud(id) {
+  CUR_BUD_ID = id;
+  GET('budgets','select=*&id=eq.'+id).then(function(rows){
+    if(!rows||!rows.length) return;
+    var r=rows[0];
+    var mt=el('bud-modal-title'); if(mt) mt.textContent='✏️ تعديل ميزانية';
+    sv('bud-name',r.name); sv('bud-dept',r.dept||'عام'); sv('bud-month',r.month||''); sv('bud-amount',r.amount||0);
+    openM('m-bud');
+  });
+}
+function addSpent(id, spent, total) {
+  var add = parseFloat(prompt('أدخل مبلغ الصرف الجديد (ريال):',''));
+  if (!add || isNaN(add) || add <= 0) return;
+  UPD('budgets','id=eq.'+id,{spent:spent+add}).then(function(){
+    toast('تم تسجيل الصرف ✓'); renderBuds();
+  }).catch(function(){ toast('خطأ','err'); });
+}
 function saveBud() {
-  var name = gv('bud-name'); if (!name) { toast('أدخل الاسم', 'err'); return; }
-  INS('budgets', { id: uid(), name: name, dept: gv('bud-dept'), month: gv('bud-month'), amount: parseFloat(gv('bud-amount')) || 0, spent: 0 }).then(function() {
-    toast('تم ✓'); closeM('m-bud'); renderBuds();
-  }).catch(function(e) { toast('خطأ', 'err'); });
+  var name = gv('bud-name'); if (!name) { toast('أدخل الاسم','err'); return; }
+  var d = {name:name, dept:gv('bud-dept'), month:gv('bud-month'), amount:parseFloat(gv('bud-amount'))||0};
+  var p = CUR_BUD_ID ? UPD('budgets','id=eq.'+CUR_BUD_ID,d) : INS('budgets',Object.assign({id:uid(),spent:0},d));
+  p.then(function(){ toast('تم ✓'); closeM('m-bud'); CUR_BUD_ID=null; renderBuds(); }).catch(function(){ toast('خطأ','err'); });
 }
 function saveExp() {
   var desc = gv('exp-desc'); if (!desc) { toast('أدخل الوصف', 'err'); return; }
@@ -1828,9 +1855,13 @@ function renderSettings() {
     '</div>' +
     '<div class="fg"><label>اسم التطبيق</label><input type="text" id="set-name" value="' + (CFG.appName || 'Eight Blades') + '"></div>' +
     '<button class="btn btn-y" style="width:100%;margin-bottom:16px" onclick="saveIdentity()">✓ حفظ الهوية</button>' +
+    '<div class="card-title" style="margin-bottom:12px">🏷 أنواع الملكية</div>' +
+    '<div class="fg"><label style="color:var(--mt);font-size:10px">سطر لكل نوع: القيمة|الاسم (مثال: branch|مملوك)</label><textarea id="set-owner-types" style="height:90px">' + getOwnerTypes().map(function(o){return o.val+'|'+o.lbl;}).join('\n') + '</textarea></div>' +
+    '<button class="btn btn-y" style="width:100%;margin-bottom:16px" onclick="saveListCFG(this,3)">✓ حفظ أنواع الملكية</button>' +
     '<div class="card-title" style="margin-bottom:12px">✅ إعدادات الموافقة</div>' +
-    '<div class="fg"><label>حد الموافقة (ريال)</label><input type="number" id="set-thr" value="' + (CFG.approvalThreshold || 0) + '"></div>' +
-    '<button class="btn btn-y" style="width:100%;margin-bottom:16px" onclick="saveApCFG()">✓ حفظ</button>' +
+    '<div class="fg"><label>حد الموافقة (ريال) — فوق هذا يحتاج موافقة</label><input type="number" id="set-thr" value="' + (CFG.approvalThreshold || 0) + '"></div>' +
+    '<div class="fg"><label>المعتمد (\u0641ارغ = المدير تلقائياً)</label><select id="set-approver"><option value="">المدير</option>' + EMPS.filter(function(e){return e.active!==false;}).map(function(e){return '<option value="'+e.id+'"'+(CFG.approverId===e.id?' selected':'')+'>'+e.name+'</option>';}).join('') + '</select></div>' +
+    '<button class="btn btn-y" style="width:100%;margin-bottom:16px" onclick="saveApCFG()">✓ حفظ الموافقات</button>' +
     '<div class="card-title" style="margin-bottom:12px">📦 تصنيفات المنتجات</div>' +
     '<div class="fg"><textarea id="set-prod-cats" style="height:100px">' + getProdCats().join('\n') + '</textarea></div>' +
     '<button class="btn btn-y" style="width:100%;margin-bottom:16px" onclick="saveListCFG(this,1)">&#x2713; &#x062D;&#x0641;&#x0638; &#x0627;&#x0644;&#x062A;&#x0635;&#x0646;&#x064A;&#x0641;&#x0627;&#x062A;</button>' +
@@ -1866,6 +1897,18 @@ function saveIdentity() {
   toast('تم ✓');
 }
 function saveListCFG(btn, idx) {
+  if (idx === 3) {
+    var rawO = el('set-owner-types') ? el('set-owner-types').value : '';
+    var arr = rawO.split('\n').map(function(s){
+      s=s.trim(); var p=s.split('|');
+      return p.length>=2?{val:p[0].trim(),lbl:p[1].trim()}:null;
+    }).filter(Boolean);
+    CFG.ownerTypes = arr;
+    localStorage.setItem('8b_cfg',JSON.stringify(CFG));
+    saveCFGToDB('ownerTypes',JSON.stringify(arr));
+    toast('تم حفظ أنواع الملكية ✓');
+    return;
+  }
   var keyMap = {1:['prodCats','set-prod-cats'], 2:['assetCats','set-asset-cats']};
   var pair = keyMap[idx]; if (!pair) return;
   var key = pair[0], inputId = pair[1];
@@ -1876,7 +1919,16 @@ function saveListCFG(btn, idx) {
   saveCFGToDB(key, JSON.stringify(items));
   toast('تم الحفظ ✓');
 }
-function saveApCFG() { CFG.approvalThreshold = parseInt(el('set-thr') ? el('set-thr').value : 0) || 0; localStorage.setItem('8b_cfg', JSON.stringify(CFG)); toast('تم ✓'); }
+function saveApCFG() {
+  CFG.approvalThreshold = parseInt(el('set-thr')?el('set-thr').value:0)||0;
+  var ap = el('set-approver'); CFG.approverId = ap?ap.value:'';
+  if (CFG.approverId) { for(var i=0;i<EMPS.length;i++){if(EMPS[i].id===CFG.approverId){CFG.approverName=EMPS[i].name;break;}} }
+  else CFG.approverName='';
+  localStorage.setItem('8b_cfg',JSON.stringify(CFG));
+  saveCFGToDB('approvalThreshold',String(CFG.approvalThreshold));
+  saveCFGToDB('approverId',CFG.approverId||'');
+  toast('تم حفظ إعدادات الموافقة ✓');
+}
 function saveRKZ() { CFG.rakazKey = el('set-rk') ? el('set-rk').value : ''; CFG.rakazTenant = el('set-rt') ? el('set-rt').value : ''; localStorage.setItem('8b_cfg', JSON.stringify(CFG)); toast('تم حفظ مفاتيح ركاز ✓'); }
 
 // Hub
