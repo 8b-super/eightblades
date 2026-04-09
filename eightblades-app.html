@@ -846,35 +846,63 @@ function applyLogo() {
   if (tbLogo) tbLogo.innerHTML = '<img src="' + CFG.logo + '" style="height:32px;border-radius:8px;object-fit:cover">';
 }
 function boot() {
-  el('ld-txt').textContent = 'جاري الاتصال...';
   el('retry-btn').style.display = 'none';
+  // Load local config instantly
   try { CFG = JSON.parse(localStorage.getItem('8b_cfg') || '{}'); } catch(e) { CFG = {}; }
   applyLogo();
   applyLang();
-  // Load config from Supabase in background
-  loadCFGFromDB();
 
+  // Check saved session — enter app immediately
   var saved = localStorage.getItem('8b_me');
   if (saved) {
     try { ME = JSON.parse(saved); } catch(e) {}
     if (ME && ME.id) {
-      el('ld-txt').textContent = 'جاري التحميل...';
-      loadAll(function() { enterApp(); });
+      // Load cached employees first for instant display
+      try { EMPS = JSON.parse(localStorage.getItem('8b_emps') || '[]'); } catch(e) { EMPS = []; }
+      enterApp();
+      // Refresh data in background silently
+      loadAll(function() {});
+      loadCFGFromDB();
       return;
     }
   }
 
-  el('ld-txt').textContent = 'جاري تحميل الموظفين...';
+  // No session — check cached employees for instant login screen
+  var cachedEmps = null;
+  try { cachedEmps = JSON.parse(localStorage.getItem('8b_emps') || 'null'); } catch(e) {}
+
+  if (cachedEmps && cachedEmps.length) {
+    // Show login screen instantly from cache
+    EMPS = cachedEmps.filter(function(e) { return e.active !== false; });
+    el('ld').style.display = 'none';
+    el('lg').style.display = 'flex';
+    renderUsers();
+    // Refresh employees from Supabase in background
+    GET('employees', 'select=id,name,title,role,pin,photo,active&order=name').then(function(rows) {
+      if (!Array.isArray(rows)) return;
+      localStorage.setItem('8b_emps', JSON.stringify(rows));
+      EMPS = rows.filter(function(e) { return e.active !== false; });
+      // Only re-render if still on login screen
+      if (el('lg').style.display !== 'none') renderUsers();
+    }).catch(function() {});
+    loadCFGFromDB();
+    return;
+  }
+
+  // First time — must load from Supabase
+  el('ld-txt').textContent = 'جاري الاتصال...';
   GET('employees', 'select=id,name,title,role,pin,photo,active&order=name')
     .then(function(rows) {
       if (!Array.isArray(rows)) {
         showLdErr('خطأ: ' + (rows.message || rows.hint || JSON.stringify(rows).slice(0, 80)));
         return;
       }
+      localStorage.setItem('8b_emps', JSON.stringify(rows));
       EMPS = rows.filter(function(e) { return e.active !== false; });
       el('ld').style.display = 'none';
       el('lg').style.display = 'flex';
       renderUsers();
+      loadCFGFromDB();
     })
     .catch(function(err) {
       showLdErr('تعذر الاتصال: ' + (err.message || 'network error'));
@@ -893,7 +921,7 @@ function loadAll(cb) {
     GET('assets', 'select=*&order=name'),
     GET('branches', 'select=*&order=name')
   ]).then(function(r) {
-    if (Array.isArray(r[0])) EMPS = r[0];
+    if (Array.isArray(r[0])) { EMPS = r[0]; localStorage.setItem('8b_emps', JSON.stringify(r[0])); }
     if (Array.isArray(r[1])) PRODS = r[1];
     if (Array.isArray(r[2])) ASSETS = r[2];
     if (Array.isArray(r[3])) BRANCHES = r[3];
