@@ -622,6 +622,27 @@ document.addEventListener('click', function(ev) {
 // ═══════════════════════════════
 // BOOT
 // ═══════════════════════════════
+function loadCFGFromDB() {
+  GET('config', 'select=key,value').then(function(rows) {
+    if (!Array.isArray(rows) || !rows.length) return;
+    rows.forEach(function(row) {
+      try { CFG[row.key] = JSON.parse(row.value); } catch(e) { CFG[row.key] = row.value; }
+    });
+    localStorage.setItem('8b_cfg', JSON.stringify(CFG));
+    applyLogo();
+  }).catch(function() {});
+}
+function saveCFGToDB(key, value) {
+  var strVal = typeof value === 'string' ? value : JSON.stringify(value);
+  // Upsert
+  GET('config', 'select=key&key=eq.' + key).then(function(rows) {
+    if (rows && rows.length) {
+      UPD('config', 'key=eq.' + key, { value: strVal });
+    } else {
+      INS('config', { key: key, value: strVal });
+    }
+  });
+}
 function applyLogo() {
   if (!CFG.logo) return;
   // Loading screen
@@ -639,6 +660,8 @@ function boot() {
   el('retry-btn').style.display = 'none';
   try { CFG = JSON.parse(localStorage.getItem('8b_cfg') || '{}'); } catch(e) { CFG = {}; }
   applyLogo();
+  // Load config from Supabase in background
+  loadCFGFromDB();
 
   var saved = localStorage.getItem('8b_me');
   if (saved) {
@@ -1616,15 +1639,20 @@ function uploadLogo(inp) {
   reader.onload = function(e) {
     CFG.logo = e.target.result;
     localStorage.setItem('8b_cfg', JSON.stringify(CFG));
+    saveCFGToDB('logo', CFG.logo);
     var prev = el('logo-preview');
     if (prev) prev.innerHTML = '<img src="' + CFG.logo + '" style="width:60px;height:60px;border-radius:12px;object-fit:cover">';
-    var tbLogo = el('tb-logo');
-    if (tbLogo) tbLogo.innerHTML = '<img src="' + CFG.logo + '" style="height:28px;border-radius:6px;object-fit:cover">';
+    applyLogo();
     toast('تم رفع اللوقو ✓');
   };
   reader.readAsDataURL(file);
 }
-function saveIdentity() { CFG.appName = el('set-name') ? el('set-name').value : 'Eight Blades'; localStorage.setItem('8b_cfg', JSON.stringify(CFG)); toast('تم ✓'); }
+function saveIdentity() {
+  CFG.appName = el('set-name') ? el('set-name').value : 'Eight Blades';
+  localStorage.setItem('8b_cfg', JSON.stringify(CFG));
+  saveCFGToDB('appName', CFG.appName);
+  toast('تم ✓');
+}
 function saveApCFG() { CFG.approvalThreshold = parseInt(el('set-thr') ? el('set-thr').value : 0) || 0; localStorage.setItem('8b_cfg', JSON.stringify(CFG)); toast('تم ✓'); }
 function saveRKZ() { CFG.rakazKey = el('set-rk') ? el('set-rk').value : ''; CFG.rakazTenant = el('set-rt') ? el('set-rt').value : ''; localStorage.setItem('8b_cfg', JSON.stringify(CFG)); toast('تم حفظ مفاتيح ركاز ✓'); }
 
