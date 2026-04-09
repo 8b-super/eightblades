@@ -228,6 +228,7 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
     </div>
     <div id="tb-logo" style="position:absolute;left:50%;transform:translateX(-50%)">✂ 8B</div>
     <div class="tb-btns">
+      <button class="tbtn" onclick="toggleLang()" id="lang-btn" style="min-width:36px">EN</button>
       <button class="tbtn yw" onclick="goHub()">🧭</button>
       <button class="tbtn" onclick="doLogout()" id="logout-btn">خروج</button>
     </div>
@@ -390,7 +391,10 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
 <div class="mbg" id="m-ap"><div class="modal"><div class="mhandle"></div><div class="minner">
   <div class="mtitle" id="ap-title">+ منتج جديد</div>
   <div class="fg"><label>الاسم</label><input type="text" id="ap-name"></div>
-  <div class="fg"><label>الفئة</label><input type="text" id="ap-cat" placeholder="مثال: عناية بالشعر"></div>
+  <div class="fgr">
+    <div class="fg"><label>التصنيف</label><select id="ap-cat"></select></div>
+    <div class="fg"><label>طريقة الطلب</label><select id="ap-source"><option value="محلي">🇸🇦 محلي</option><option value="مستورد">🌍 مستورد</option></select></div>
+  </div>
   <div class="fgr">
     <div class="fg"><label>كمية الصالة</label><input type="number" id="ap-store" value="0" min="0"></div>
     <div class="fg"><label>كمية المخزن</label><input type="number" id="ap-wh" value="0" min="0"></div>
@@ -404,14 +408,24 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
 
 <!-- Add Asset -->
 <div class="mbg" id="m-aa"><div class="modal"><div class="mhandle"></div><div class="minner">
-  <div class="mtitle">+ أصل جديد</div>
+  <div class="mtitle" id="aa-title">+ أصل جديد</div>
   <div class="fg"><label>الاسم</label><input type="text" id="aa-name" placeholder="مثال: ماكينة Wahl"></div>
-  <div class="fg"><label>الفئة</label><select id="aa-cat"><option>ماكينات حلاقة</option><option>كراسي حلاقة</option><option>أجهزة عناية</option><option>أثاث</option><option>أجهزة كهربائية</option><option>أخرى</option></select></div>
-  <div class="fg"><label>نوع الملكية</label><select id="aa-own"><option value="branch">مملوك</option><option value="rented">إيجار</option></select></div>
+  <div class="fgr">
+    <div class="fg"><label>الفئة</label><select id="aa-cat"></select></div>
+    <div class="fg"><label>نوع الملكية</label><select id="aa-own"></select></div>
+  </div>
+  <div class="fg"><label>الرقم التسلسلي</label>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="aa-serial" placeholder="يُولَّد تلقائياً" style="flex:1">
+      <button class="btn-sm" onclick="genSerial()" style="white-space:nowrap">🔄 توليد</button>
+    </div>
+    <div style="font-size:10px;color:var(--mt);margin-top:4px">الرقم التسلسلي يُطبع ويُلصق على الأصل للتبليغ السريع</div>
+  </div>
   <div class="fgr">
     <div class="fg"><label>تاريخ الشراء</label><input type="date" id="aa-date"></div>
     <div class="fg"><label>التكلفة</label><input type="number" id="aa-cost" value="0"></div>
   </div>
+  <div class="fg"><label>انتهاء الضمان</label><input type="date" id="aa-warranty"></div>
   <button class="btn btn-y" style="width:100%" onclick="saveAsset()">✓ إضافة</button>
 </div></div></div>
 
@@ -581,6 +595,45 @@ var SB = 'https://twdehehmddckkzykagjl.supabase.co';
 var SK = 'sb_publishable_JDEByCIJNF29WaGfKJ-uFw_PSdGkJDG';
 
 var ME = null, CFG = {}, SEL = null, PIN = '';
+
+function getProdCats() {
+  if (CFG.prodCats && CFG.prodCats.length) return CFG.prodCats;
+  return ['عناية بالشعر','عناية بالذقن','عناية بالبشرة','منتجات التصفيف','مستلزمات الصالة','أخرى'];
+}
+function getAssetCats() {
+  if (CFG.assetCats && CFG.assetCats.length) return CFG.assetCats;
+  return ['ماكينات حلاقة','كراسي حلاقة','أجهزة عناية','مجففات','أثاث','أجهزة كهربائية','أخرى'];
+}
+function getOwnerTypes() {
+  if (CFG.ownerTypes && CFG.ownerTypes.length) return CFG.ownerTypes;
+  return [{val:'branch',lbl:'مملوك'},{val:'rented',lbl:'إيجار'},{val:'leased',lbl:'تمويل'},{val:'loan',lbl:'عارية'}];
+}
+
+function fillProdCatSel(selId, sel_val) {
+  var sel = el(selId); if (!sel) return;
+  var cats = getProdCats(); var h = '';
+  for (var i=0;i<cats.length;i++) h += '<option value="'+cats[i]+'"'+(cats[i]===sel_val?' selected':'')+'>'+cats[i]+'</option>';
+  sel.innerHTML = h;
+}
+function fillAssetCatSel(selId, sel_val) {
+  var sel = el(selId); if (!sel) return;
+  var cats = getAssetCats(); var h = '';
+  for (var i=0;i<cats.length;i++) h += '<option value="'+cats[i]+'"'+(cats[i]===sel_val?' selected':'')+'>'+cats[i]+'</option>';
+  sel.innerHTML = h;
+}
+function fillOwnerTypeSel(selId, sel_val) {
+  var sel = el(selId); if (!sel) return;
+  var types = getOwnerTypes(); var h = '';
+  for (var i=0;i<types.length;i++) h += '<option value="'+types[i].val+'"'+(types[i].val===sel_val?' selected':'')+'>'+types[i].lbl+'</option>';
+  sel.innerHTML = h;
+}
+
+function genSerial() {
+  var prefix = 'AST';
+  var num = String(Date.now()).slice(-5);
+  var serial = prefix + '-' + num;
+  sv('aa-serial', serial);
+}
 var LANG = localStorage.getItem('8b_lang') || 'ar';
 
 var T = {
@@ -1100,18 +1153,28 @@ function renderProds() {
   });
 }
 
-function openAddProd() { CUR_PROD_ID = null; el('ap-title').textContent = '+ منتج جديد'; ['ap-name','ap-cat'].forEach(function(id){ sv(id,''); }); sv('ap-store',0); sv('ap-wh',0); sv('ap-min',5); sv('ap-cost',0); openM('m-ap'); }
+function openAddProd() {
+  CUR_PROD_ID = null;
+  el('ap-title').textContent = '+ منتج جديد';
+  sv('ap-name',''); sv('ap-store',0); sv('ap-wh',0); sv('ap-min',5); sv('ap-cost',0);
+  fillProdCatSel('ap-cat', '');
+  sv('ap-source','محلي');
+  openM('m-ap');
+}
 function openEditProd(id) {
   CUR_PROD_ID = id;
   var p = null; for (var i = 0; i < PRODS.length; i++) { if (PRODS[i].id === id) { p = PRODS[i]; break; } }
   if (!p) return;
   el('ap-title').textContent = '✏️ تعديل منتج';
-  sv('ap-name', p.name); sv('ap-cat', p.cat); sv('ap-store', p.store); sv('ap-wh', p.warehouse); sv('ap-min', p.min_level); sv('ap-cost', p.cost);
+  sv('ap-name', p.name);
+  fillProdCatSel('ap-cat', p.cat);
+  sv('ap-source', p.source || 'محلي');
+  sv('ap-store', p.store); sv('ap-wh', p.warehouse); sv('ap-min', p.min_level); sv('ap-cost', p.cost);
   openM('m-ap');
 }
 function saveProd() {
   var name = gv('ap-name'); if (!name) { toast('أدخل الاسم', 'err'); return; }
-  var d = { name: name, cat: gv('ap-cat'), store: parseInt(gv('ap-store')) || 0, warehouse: parseInt(gv('ap-wh')) || 0, min_level: parseInt(gv('ap-min')) || 5, cost: parseFloat(gv('ap-cost')) || 0 };
+  var d = { name: name, cat: gv('ap-cat'), source: gv('ap-source') || 'محلي', store: parseInt(gv('ap-store')) || 0, warehouse: parseInt(gv('ap-wh')) || 0, min_level: parseInt(gv('ap-min')) || 5, cost: parseFloat(gv('ap-cost')) || 0 };
   var p = CUR_PROD_ID ? UPD('products', 'id=eq.' + CUR_PROD_ID, d) : INS('products', Object.assign({ id: uid() }, d));
   p.then(function() { toast('تم الحفظ ✓'); closeM('m-ap'); CUR_PROD_ID = null; renderProds(); }).catch(function(e) { toast('خطأ: ' + e.message, 'err'); });
 }
@@ -1130,9 +1193,10 @@ function renderAssets() {
 }
 function saveAsset() {
   var name = gv('aa-name'); if (!name) { toast('أدخل الاسم', 'err'); return; }
-  INS('assets', { id: uid(), name: name, cat: gv('aa-cat'), owner_type: gv('aa-own'), purchase_date: gv('aa-date') || null, cost: parseFloat(gv('aa-cost')) || 0, faults: 0, maint_cost: 0 }).then(function() {
+  var serial = gv('aa-serial') || ('AST-' + String(Date.now()).slice(-5));
+  INS('assets', { id: uid(), name: name, cat: gv('aa-cat'), owner_type: gv('aa-own'), serial: serial, purchase_date: gv('aa-date') || null, warranty_date: gv('aa-warranty') || null, cost: parseFloat(gv('aa-cost')) || 0, faults: 0, maint_cost: 0 }).then(function() {
     toast('تم الإضافة ✓'); closeM('m-aa'); renderAssets();
-  }).catch(function(e) { toast('خطأ', 'err'); });
+  }).catch(function(e) { toast('خطأ: ' + e.message, 'err'); });
 }
 
 function renderOrders() {
@@ -1704,6 +1768,12 @@ function renderSettings() {
     '<div class="card-title" style="margin-bottom:12px">✅ إعدادات الموافقة</div>' +
     '<div class="fg"><label>حد الموافقة (ريال)</label><input type="number" id="set-thr" value="' + (CFG.approvalThreshold || 0) + '"></div>' +
     '<button class="btn btn-y" style="width:100%;margin-bottom:16px" onclick="saveApCFG()">✓ حفظ</button>' +
+    '<div class="card-title" style="margin-bottom:12px">📦 تصنيفات المنتجات</div>' +
+    '<div class="fg"><textarea id="set-prod-cats" style="height:100px">' + getProdCats().join('\n') + '</textarea></div>' +
+    '<button class="btn btn-y" style="width:100%;margin-bottom:16px" onclick="saveListCFG(this,1)">&#x2713; &#x062D;&#x0641;&#x0638; &#x0627;&#x0644;&#x062A;&#x0635;&#x0646;&#x064A;&#x0641;&#x0627;&#x062A;</button>' +
+    '<div class="card-title" style="margin-bottom:12px">&#x1F527; &#x0641;&#x0626;&#x0627;&#x062A; &#x0627;&#x0644;&#x0623;&#x0635;&#x0648;&#x0644;</div>' +
+    '<div class="fg"><label style="color:var(--mt);font-size:10px">&#x633;&#x637;&#x631; &#x644;&#x643;&#x644; &#x641;&#x626;&#x629;</label><textarea id="set-asset-cats" style="height:100px">' + getAssetCats().join('\n') + '</textarea></div>' +
+    '<button class="btn btn-y" style="width:100%;margin-bottom:16px" onclick="saveListCFG(this,2)">&#x2713; &#x062D;&#x0641;&#x0638; &#x0641;&#x0626;&#x0627;&#x062A; &#x0627;&#x0644;&#x0623;&#x0635;&#x0648;&#x0644;</button>' +
     '<div class="card-title" style="margin-bottom:12px">🔗 ركاز API</div>' +
     '<div class="fg"><label>Authorization Key</label><input type="password" id="set-rk" value="' + (CFG.rakazKey || '') + '"></div>' +
     '<div class="fg"><label>Tenant ID</label><input type="text" id="set-rt" value="' + (CFG.rakazTenant || '') + '"></div>' +
@@ -1731,6 +1801,17 @@ function saveIdentity() {
   localStorage.setItem('8b_cfg', JSON.stringify(CFG));
   saveCFGToDB('appName', CFG.appName);
   toast('تم ✓');
+}
+function saveListCFG(btn, idx) {
+  var keyMap = {1:['prodCats','set-prod-cats'], 2:['assetCats','set-asset-cats']};
+  var pair = keyMap[idx]; if (!pair) return;
+  var key = pair[0], inputId = pair[1];
+  var val = el(inputId) ? el(inputId).value : '';
+  var items = val.split('\n').map(function(s){return s.trim();}).filter(Boolean);
+  CFG[key] = items;
+  localStorage.setItem('8b_cfg', JSON.stringify(CFG));
+  saveCFGToDB(key, JSON.stringify(items));
+  toast('تم الحفظ ✓');
 }
 function saveApCFG() { CFG.approvalThreshold = parseInt(el('set-thr') ? el('set-thr').value : 0) || 0; localStorage.setItem('8b_cfg', JSON.stringify(CFG)); toast('تم ✓'); }
 function saveRKZ() { CFG.rakazKey = el('set-rk') ? el('set-rk').value : ''; CFG.rakazTenant = el('set-rt') ? el('set-rt').value : ''; localStorage.setItem('8b_cfg', JSON.stringify(CFG)); toast('تم حفظ مفاتيح ركاز ✓'); }
