@@ -74,6 +74,7 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
 .row-sub{font-size:10px;color:var(--mt);margin-top:2px}
 .sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
 .sht{font-size:16px;font-weight:900}
+.back-btn{display:inline-flex;align-items:center;gap:5px;background:var(--c2);border:1px solid var(--bd);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;color:var(--tx);margin-bottom:12px}
 .shs{font-size:11px;color:var(--mt)}
 .empty{text-align:center;color:var(--mt);padding:32px 16px;font-size:13px}
 
@@ -540,7 +541,20 @@ body{font-family:'Cairo',sans-serif;background:#0a0a0a;color:#f0f0f0;height:100d
   <input type="hidden" id="rf-id">
   <div class="fg"><label>العنوان</label><input type="text" id="rf-name"></div>
   <div class="fg"><label>الأيقونة</label><input type="text" id="rf-icon" value="📄" maxlength="2" style="width:60px"></div>
-  <div class="fg"><label>المحتوى</label><textarea id="rf-content" style="height:140px" placeholder="اكتب المحتوى..."></textarea></div>
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <button class="btn-sm" id="rf-tab-text" onclick="rfTab('text')" style="flex:1;background:var(--yw);color:#0a0a0a">📝 نص</button>
+    <button class="btn-sm" id="rf-tab-file" onclick="rfTab('file')" style="flex:1">📎 ملف</button>
+  </div>
+  <div id="rf-text-area"><div class="fg"><label>المحتوى</label><textarea id="rf-content" style="height:140px" placeholder="اكتب المحتوى..."></textarea></div></div>
+  <div id="rf-file-area" style="display:none">
+    <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:var(--c2);border:2px dashed var(--bd);border-radius:12px;padding:24px;cursor:pointer;margin-bottom:12px">
+      <span style="font-size:28px">📎</span>
+      <span style="font-size:12px;font-weight:700">اضغط لاختيار ملف</span>
+      <span style="font-size:10px;color:var(--mt)">PDF, صورة — حتى 5MB</span>
+      <input type="file" id="rf-file-inp" accept=".pdf,.png,.jpg,.jpeg,.webp" style="display:none" onchange="handleRFFile(this)">
+    </label>
+    <div id="rf-file-info" style="font-size:11px;color:var(--gr);text-align:center"></div>
+  </div>
   <button class="btn btn-y" style="width:100%" onclick="saveRF()">✓ حفظ</button>
 </div></div></div>
 
@@ -739,7 +753,22 @@ function enterApp() {
   if (addBtn) addBtn.style.display = ME.role === 'manager' ? '' : 'none';
 
   buildNav();
+  addBackButtons();
   goScreen('home');
+}
+function addBackButtons() {
+  var screens = ['request','inventory','maintenance','finance','approvals','rakaz','employees'];
+  screens.forEach(function(s) {
+    var scr = el('s-' + s);
+    if (!scr) return;
+    var existing = scr.querySelector('.back-btn');
+    if (existing) return;
+    var btn = document.createElement('button');
+    btn.className = 'back-btn';
+    btn.innerHTML = '&#8594; رجوع';
+    btn.onclick = goBack;
+    scr.insertBefore(btn, scr.firstChild);
+  });
 }
 
 function doLogout() {
@@ -789,8 +818,10 @@ function buildNav() {
   }).join('');
 }
 
-function goScreen(s) {
+var SCREEN_HISTORY = [];
+function goScreen(s, addHistory) {
   if (!canSee(s)) { toast('ليس لديك صلاحية', 'err'); return; }
+  if (addHistory !== false && SCREEN_HISTORY[SCREEN_HISTORY.length-1] !== s) SCREEN_HISTORY.push(s);
   document.querySelectorAll('.screen').forEach(function(e) { e.classList.remove('on'); });
   document.querySelectorAll('.nit').forEach(function(e) { e.classList.remove('on'); });
   var scr = el('s-' + s); if (scr) scr.classList.add('on');
@@ -803,6 +834,14 @@ function goScreen(s) {
   else if (s === 'approvals') loadApprovals();
   else if (s === 'rakaz') { /* static */ }
   else if (s === 'employees') loadEmployees();
+}
+function goBack() {
+  if (SCREEN_HISTORY.length > 1) {
+    SCREEN_HISTORY.pop();
+    goScreen(SCREEN_HISTORY[SCREEN_HISTORY.length-1], false);
+  } else {
+    goScreen('home', false);
+  }
 }
 
 // ═══════════════════════════════
@@ -1409,7 +1448,28 @@ function renderRefs() {
     }).join('') + '</div>';
   });
 }
-function openAddRF() { CUR_RF_ID = null; el('rf-title').textContent = '+ دليل جديد'; sv('rf-name',''); sv('rf-icon','📄'); sv('rf-content',''); openM('m-rf'); }
+var RF_FILE_DATA = null;
+function rfTab(t) {
+  RF_FILE_DATA = t === 'file' ? RF_FILE_DATA : null;
+  el('rf-text-area').style.display = t === 'text' ? 'block' : 'none';
+  el('rf-file-area').style.display = t === 'file' ? 'block' : 'none';
+  el('rf-tab-text').style.background = t === 'text' ? 'var(--yw)' : '';
+  el('rf-tab-text').style.color = t === 'text' ? '#0a0a0a' : '';
+  el('rf-tab-file').style.background = t === 'file' ? 'var(--yw)' : '';
+  el('rf-tab-file').style.color = t === 'file' ? '#0a0a0a' : '';
+}
+function handleRFFile(inp) {
+  if (!inp || !inp.files[0]) return;
+  var file = inp.files[0];
+  if (file.size > 5242880) { toast('الملف أكبر من 5MB', 'err'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    RF_FILE_DATA = e.target.result;
+    el('rf-file-info').textContent = '✓ ' + file.name + ' (' + (file.size/1024).toFixed(0) + ' KB)';
+  };
+  reader.readAsDataURL(file);
+}
+function openAddRF() { CUR_RF_ID = null; RF_FILE_DATA = null; el('rf-title').textContent = '+ دليل جديد'; sv('rf-name',''); sv('rf-icon','📄'); sv('rf-content',''); el('rf-file-info').textContent=''; rfTab('text'); openM('m-rf'); }
 function openEditRF(id) {
   CUR_RF_ID = id;
   GET('references_docs', 'select=*&id=eq.' + id).then(function(rows) {
@@ -1421,16 +1481,33 @@ function openEditRF(id) {
 }
 function saveRF() {
   var title = gv('rf-name'); if (!title) { toast('أدخل العنوان', 'err'); return; }
-  var d = { title: title, icon: gv('rf-icon') || '📄', type: 'text', content: gv('rf-content') };
+  var isFile = el('rf-file-area').style.display !== 'none';
+  if (isFile && !RF_FILE_DATA && !CUR_RF_ID) { toast('اختر ملف', 'err'); return; }
+  var d = { title: title, icon: gv('rf-icon') || '📄', type: isFile ? 'file' : 'text' };
+  if (isFile) { if (RF_FILE_DATA) d.file_data = RF_FILE_DATA; }
+  else d.content = gv('rf-content');
   var p = CUR_RF_ID ? UPD('references_docs', 'id=eq.' + CUR_RF_ID, d) : INS('references_docs', Object.assign({ id: uid() }, d));
-  p.then(function() { toast('تم ✓'); closeM('m-rf'); CUR_RF_ID = null; renderRefs(); }).catch(function(e) { toast('خطأ', 'err'); });
+  p.then(function() { toast('تم ✓'); closeM('m-rf'); CUR_RF_ID = null; RF_FILE_DATA = null; renderRefs(); }).catch(function(e) { toast('خطأ', 'err'); });
 }
 function viewRF(id) {
   GET('references_docs', 'select=title,content,file_data,type&id=eq.' + id).then(function(rows) {
     if (!rows || !rows.length) return;
     var r = rows[0];
-    if (r.type === 'text' || !r.file_data) alert(r.title + '\n\n' + (r.content || ''));
-    else { var w = window.open(''); if (w) w.document.write('<img src="' + r.file_data + '" style="max-width:100%">'); }
+    if (r.type === 'text' || !r.file_data) {
+      alert(r.title + '\n\n' + (r.content || ''));
+    } else {
+      var w = window.open('');
+      if (w) {
+        if (r.file_data.indexOf('image') !== -1) {
+          w.document.write('<html><body style="margin:0;background:#000"><img src="' + r.file_data + '" style="max-width:100%;display:block;margin:auto"></body></html>');
+        } else if (r.file_data.indexOf('pdf') !== -1) {
+          w.document.write('<html><body style="margin:0"><embed src="' + r.file_data + '" width="100%" height="100%" type="application/pdf"></body></html>');
+        } else {
+          var a = document.createElement('a');
+          a.href = r.file_data; a.download = r.title; a.click();
+        }
+      }
+    }
   });
 }
 function deleteRF(id) {
@@ -1442,10 +1519,15 @@ function deleteRF(id) {
 function renderSettings() {
   var c = el('em-s');
   if (ME.role !== 'manager') { c.innerHTML = '<div class="empty">الإعدادات للمدير فقط</div>'; return; }
+  var logoHTML = CFG.logo ? '<img src="' + CFG.logo + '" style="width:60px;height:60px;border-radius:12px;object-fit:cover">' : '<div style="width:60px;height:60px;border-radius:12px;background:var(--c3);display:flex;align-items:center;justify-content:center;font-size:24px">✂</div>';
   c.innerHTML = '<div class="card" style="padding:14px">' +
     '<div class="card-title" style="margin-bottom:12px">🎨 هوية التطبيق</div>' +
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">' +
+    '<div id="logo-preview">' + logoHTML + '</div>' +
+    '<label style="flex:1;background:var(--c2);border:1px solid var(--bd);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:12px;font-weight:700">📤 رفع لوقو<input type="file" id="logo-file" accept="image/*" style="display:none" onchange="uploadLogo(this)"></label>' +
+    '</div>' +
     '<div class="fg"><label>اسم التطبيق</label><input type="text" id="set-name" value="' + (CFG.appName || 'Eight Blades') + '"></div>' +
-    '<button class="btn btn-y" style="width:100%;margin-bottom:16px" onclick="saveIdentity()">✓ حفظ الاسم</button>' +
+    '<button class="btn btn-y" style="width:100%;margin-bottom:16px" onclick="saveIdentity()">✓ حفظ الهوية</button>' +
     '<div class="card-title" style="margin-bottom:12px">✅ إعدادات الموافقة</div>' +
     '<div class="fg"><label>حد الموافقة (ريال)</label><input type="number" id="set-thr" value="' + (CFG.approvalThreshold || 0) + '"></div>' +
     '<button class="btn btn-y" style="width:100%;margin-bottom:16px" onclick="saveApCFG()">✓ حفظ</button>' +
@@ -1454,6 +1536,22 @@ function renderSettings() {
     '<div class="fg"><label>Tenant ID</label><input type="text" id="set-rt" value="' + (CFG.rakazTenant || '') + '"></div>' +
     '<button class="btn btn-y" style="width:100%" onclick="saveRKZ()">✓ حفظ</button>' +
     '</div>';
+}
+function uploadLogo(inp) {
+  if (!inp || !inp.files[0]) return;
+  var file = inp.files[0];
+  if (file.size > 2097152) { toast('الصورة أكبر من 2MB', 'err'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    CFG.logo = e.target.result;
+    localStorage.setItem('8b_cfg', JSON.stringify(CFG));
+    var prev = el('logo-preview');
+    if (prev) prev.innerHTML = '<img src="' + CFG.logo + '" style="width:60px;height:60px;border-radius:12px;object-fit:cover">';
+    var tbLogo = el('tb-logo');
+    if (tbLogo) tbLogo.innerHTML = '<img src="' + CFG.logo + '" style="height:28px;border-radius:6px;object-fit:cover">';
+    toast('تم رفع اللوقو ✓');
+  };
+  reader.readAsDataURL(file);
 }
 function saveIdentity() { CFG.appName = el('set-name') ? el('set-name').value : 'Eight Blades'; localStorage.setItem('8b_cfg', JSON.stringify(CFG)); toast('تم ✓'); }
 function saveApCFG() { CFG.approvalThreshold = parseInt(el('set-thr') ? el('set-thr').value : 0) || 0; localStorage.setItem('8b_cfg', JSON.stringify(CFG)); toast('تم ✓'); }
